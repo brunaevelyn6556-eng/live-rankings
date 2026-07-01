@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Rankings - Pontuação por Áreas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            color: #2c3e50;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #ff8c42 0%, #ff7a1f 100%);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Container Principal */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+            align-items: center;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-item label {
+            display: block;
+            font-size: 0.875rem;
+            color: #7a8a99;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-item .value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .status-item.areas .value {
+            color: #2c3e50;
+        }
+
+        .status-item.participants .value {
+            color: #1a3a52;
+        }
+
+        .status-item.max-score .value {
+            color: #ff8c42;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #ff8c42;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: #ff7a1f;
+            transform: scale(1.02);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #2c3e50;
+            border: 1px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+
+        /* Ranking List */
+        .ranking-container {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .ranking-empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #7a8a99;
+        }
+
+        .ranking-empty p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Ranking Card */
+        .ranking-card {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            transition: all 0.2s ease;
+            animation: slideIn 0.3s ease-out;
+            cursor: pointer; /* Feedback de clique mudado */
+        }
+
+        .ranking-card:last-child {
+            border-bottom: none;
+        }
+
+        .ranking-card:hover {
+            background: #fffcf9; /* Tom sutilmente alaranjado no hover */
+            transform: scale(1.005);
+        }
+
+        .ranking-card.highlight {
+            animation: pulse 0.6s ease-in-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; background: white; }
+            50% { opacity: 0.8; background: rgba(255, 140, 66, 0.15); }
+        }
+
+        /* Position Badge */
+        .position-badge {
+            flex-shrink: 0;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .position-badge.first {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .position-badge.second {
+            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+            color: #333;
+            box-shadow: 0 4px 12px rgba(192, 192, 192, 0.4);
+        }
+
+        .position-badge.third {
+            background: linear-gradient(135deg, #cd7f32 0%, #e8a76a 100%);
+            box-shadow: 0 4px 12px rgba(205, 127, 50, 0.4);
+        }
+
+        .position-badge.other {
+            background: #b0b0b0;
+        }
+
+        /* Area Info */
+        .area-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .area-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff8c42 0%, #ffb366 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+
+        /* Score */
+        .score {
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .score-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #ff8c42;
+            font-family: 'Playfair Display', serif;
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: #7a8a99;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 500px;
+            animation: slideUp 0.25s ease-out;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-content-large {
+            max-width: 650px;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7a8a99;
+            padding: 0;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: #2c3e50;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ff8c42;
+            box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.1);
+        }
+
+        .toggle-area-type {
+            display: inline-block;
+            margin-top: 0.75rem;
+            color: #ff8c42;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .toggle-area-type:hover {
+            color: #ff7a1f;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Estilos da Tabela de Histórico (Popup de Detalhes) */
+        .history-table-container {
+            width: 100%;
+            border: 1px solid #eab308;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .history-table th {
+            background-color: #ff8c42;
+            color: white;
+            padding: 0.75rem;
+            font-weight: 600;
+        }
+
+        .history-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f0f0f0;
+            color: #4a5568;
+        }
+
+        .history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-table tr:nth-child(even) {
+            background-color: #fffaf5;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .modal-footer button {
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .status-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .ranking-card {
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .area-info {
+                order: 2;
+                width: 100%;
+            }
+
+            .position-badge {
+                order: 1;
+            }
+
+            .score {
+                order: 3;
+                width: 100%;
+                text-align: left;
+            }
+
+            .modal-content {
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-logo">🏆</div>
+            <div>
+                <h1>Live Rankings</h1>
+                <p>Pontuação em Tempo Real por Áreas</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container Principal -->
+    <div class="container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item areas">
+                <label>Total de Áreas</label>
+                <div class="value" id="totalAreas">0</div>
+            </div>
+            <div class="status-item participants">
+                <label>Total de Participantes</label>
+                <div class="value" id="totalParticipants">0</div>
+            </div>
+            <div class="status-item max-score">
+                <label>Pontuação Máxima</label>
+                <div class="value" id="maxScore">0</div>
+            </div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="openModal()">
+                    ➕ Registrar Pontuação
+                </button>
+                <button class="btn-secondary" id="clearBtn" onclick="clearAll()" style="display: none;">
+                    Limpar Tudo
+                </button>
+            </div>
+        </div>
+
+        <!-- Ranking Container -->
+        <div class="ranking-container" id="rankingContainer">
+            <div class="ranking-empty">
+                <p>Nenhuma pontuação registrada ainda</p>
+                <button class="btn-primary" onclick="openModal()">
+                    Registrar Primeira Pontuação
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cadastro de Pontos -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Nova Pontuação</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="errorMessage"></div>
+                
+                <div class="form-group">
+                    <label>Selecionar Área (Departamento)</label>
+                    <select id="areaSelect" onchange="handleAreaChange()">
+                        <option value="">Escolha uma área</option>
+                    </select>
+                    <div class="toggle-area-type" onclick="toggleAreaType()">
+                        + Adicionar nova área
+                    </div>
+                </div>
+
+                <div class="form-group" id="newAreaGroup" style="display: none;">
+                    <label>Nome da Nova Área</label>
+                    <input type="text" id="newAreaInput" placeholder="Digite o nome da área">
+                    <div class="toggle-area-type" onclick="toggleAreaType()">
+                        ← Voltar para lista
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Input Score (pontos)</label>
+                    <input type="number" id="scoreInput" placeholder="ex: 500" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity of Participants</label>
+                    <input type="number" id="participantsInput" placeholder="ex: 10" min="1">
+                </div>
+
+                <!-- 1° AJUSTE: Novo campo de Observação -->
+                <div class="form-group">
+                    <label>Desafio / Jogo Lançado (Observação)</label>
+                    <textarea id="observationInput" placeholder="Ex: Desafio de Trabalho Padrão, Treinamento de 5S, Kaizen..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="submitScore()">Submit Points</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2° AJUSTE: Modal de Extrato e Detalhes da Área -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2 id="detailsModalTitle">Lançamentos da Área</h2>
+                <button class="modal-close" onclick="closeDetailsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="history-table-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th class="text-center">Pts</th>
+                                <th class="text-center">Part.</th>
+                                <th>Desafio / Jogo (Obs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailsTableBody">
+                            <!-- Inserido dinamicamente via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDetailsModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estado da aplicação
+        let areas = [];
+        let isNewAreaMode = false;
+
+        // CARREGAR: Executa automaticamente quando a página termina de carregar
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+
+        // Carregar dados do localStorage
+        function loadData() {
+            const saved = localStorage.getItem('live_rankings_data');
+            if (saved) {
+                areas = JSON.parse(saved);
+                
+                // Garante que as datas salvas voltem a ser tratadas como datas reais
+                areas.forEach(area => {
+                    if (area.lastUpdated) area.lastUpdated = new Date(area.lastUpdated);
+                    if (area.history) {
+                        area.history.forEach(h => h.timestamp = new Date(h.timestamp));
+                    }
+                });
+            }
+            updateUI();
+        }
+
+        // Salvar dados no localStorage
+        function saveData() {
+            localStorage.setItem('live_rankings_data', JSON.stringify(areas));
+        }
+
+        // Adicionar ou atualizar pontuação
+        function addScore(areaName, score, participants, observation) {
+            const existingArea = areas.find(a => a.name.toLowerCase() === areaName.toLowerCase());
+            const cleanObservation = observation.trim() || "Sem observações";
+
+            if (existingArea) {
+                existingArea.totalScore += score;
+                existingArea.participantCount = Math.max(existingArea.participantCount, participants);
+                existingArea.lastUpdated = new Date();
+                existingArea.history.push({
+                    score,
+                    participants,
+                    observation: cleanObservation,
+                    timestamp: new Date()
+                });
+            } else {
+                areas.push({
+                    id: `area_${Date.now()}`,
+                    name: areaName,
+                    totalScore: score,
+                    participantCount: participants,
+                    lastUpdated: new Date(),
+                    history: [{
+                        score,
+                        participants,
+                        observation: cleanObservation,
+                        timestamp: new Date()
+                    }]
+                });
+            }
+
+            saveData();
+            updateUI();
+            
+            setTimeout(() => highlightArea(areaName), 50);
+        }
+
+        // Obter ranking ordenado
+        function getRanking() {
+            return [...areas].sort((a, b) => b.totalScore - a.totalScore);
+        }
+
+        // Atualizar interface
+        function updateUI() {
+            updateStatusBar();
+            updateRankingList();
+            updateAreaSelect();
+            updateClearButton();
+        }
+
+        // Atualizar status bar
+        function updateStatusBar() {
+            const totalParticipants = areas.reduce((sum, a) => sum + a.participantCount, 0);
+            const maxScore = areas.length > 0 ? Math.max(...areas.map(a => a.totalScore)) : 0;
+
+            document.getElementById('totalAreas').textContent = areas.length;
+            document.getElementById('totalParticipants').textContent = totalParticipants;
+            document.getElementById('maxScore').textContent = maxScore.toLocaleString();
+        }
+
+        // Atualizar lista de ranking
+        function updateRankingList() {
+            const container = document.getElementById('rankingContainer');
+            const ranking = getRanking();
+
+            if (ranking.length === 0) {
+                container.innerHTML = `
+                    <div class="ranking-empty">
+                        <p>Nenhuma pontuação registrada ainda</p>
+                        <button class="btn-primary" onclick="openModal()">
+                            Registrar Primeira Pontuação
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const maxScore = ranking[0].totalScore;
+            container.innerHTML = ranking.map((area, index) => {
+                const position = index + 1;
+                const progressPercent = maxScore > 0 ? (area.totalScore / maxScore) * 100 : 0;
+                
+                let positionClass = 'other';
+                if (position === 1) positionClass = 'first';
+                else if (position === 2) positionClass = 'second';
+                else if (position === 3) positionClass = 'third';
+
+                // Adicionado evento onclick="openDetailsModal('${area.id}')" para cumprir o 2° ajuste
+                return `
+                    <div class="ranking-card" id="card-${area.id}" onclick="openDetailsModal('${area.id}')">
+                        <div class="position-badge ${positionClass}">${position}</div>
+                        <div class="area-info">
+                            <div class="area-name">${area.name}</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                        <div class="score">
+                            <div class="score-value">${area.totalScore.toLocaleString()}</div>
+                            <div class="score-label">PTS</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Atualizar select de áreas
+        function updateAreaSelect() {
+            const select = document.getElementById('areaSelect');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Escolha uma área</option>' +
+                areas.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+            
+            select.value = currentValue;
+        }
+
+        // Atualizar botão limpar
+        function updateClearButton() {
+            const clearBtn = document.getElementById('clearBtn');
+            clearBtn.style.display = areas.length > 0 ? 'block' : 'none';
+        }
+
+        // Destacar área atualizada
+        function highlightArea(areaName) {
+            const area = areas.find(a => a.name.toLowerCase() === areaName.toLowerCase());
+            if (area) {
+                const card = document.getElementById(`card-${area.id}`);
+                if (card) {
+                    card.classList.add('highlight');
+                    setTimeout(() => card.classList.remove('highlight'), 1000);
+                }
+            }
+        }
+
+        // Limpar tudo
+        function clearAll() {
+            if (confirm('Tem certeza que deseja limpar todo o ranking?')) {
+                areas = [];
+                saveData();
+                updateUI();
+            }
+        }
+
+        // Modal de Cadastro Funcionalidades
+        function openModal() {
+            document.getElementById('modal').classList.add('active');
+            clearModalForm();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            clearModalForm();
+        }
+
+        function clearModalForm() {
+            document.getElementById('areaSelect').value = '';
+            document.getElementById('newAreaInput').value = '';
+            document.getElementById('scoreInput').value = '';
+            document.getElementById('participantsInput').value = '';
+            document.getElementById('observationInput').value = '';
+            document.getElementById('errorMessage').innerHTML = '';
+            isNewAreaMode = false;
+            updateModalUI();
+        }
+
+        function toggleAreaType() {
+            isNewAreaMode = !isNewAreaMode;
+            updateModalUI();
+        }
+
+        function updateModalUI() {
+            const selectElement = document.getElementById('areaSelect');
+            const selectGroup = selectElement ? selectElement.parentElement : null;
+            const newAreaGroup = document.getElementById('newAreaGroup');
+            
+            if (isNewAreaMode) {
+                if (selectGroup) selectGroup.style.display = 'none';
+                if (newAreaGroup) newAreaGroup.style.display = 'block';
+                document.getElementById('newAreaInput').focus();
+            } else {
+                if (selectGroup) selectGroup.style.display = 'block';
+                if (newAreaGroup) newAreaGroup.style.display = 'none';
+                document.getElementById('areaSelect').focus();
+            }
+        }
+
+        function handleAreaChange() {}
+
+        function submitScore() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.innerHTML = '';
+
+            let areaName = '';
+            if (isNewAreaMode) {
+                areaName = document.getElementById('newAreaInput').value.trim();
+            } else {
+                areaName = document.getElementById('areaSelect').value;
+            }
+
+            const score = parseInt(document.getElementById('scoreInput').value, 10);
+            const participants = parseInt(document.getElementById('participantsInput').value, 10);
+            const observation = document.getElementById('observationInput').value;
+
+            // Validações
+            if (!areaName) {
+                showError('Por favor, selecione ou insira uma área');
+                return;
+            }
+            if (!score || score <= 0) {
+                showError('Pontuação deve ser um número positivo');
+                return;
+            }
+            if (!participants || participants <= 0) {
+                showError('Quantidade de participantes deve ser um número positivo');
+                return;
+            }
+
+            addScore(areaName, score, participants, observation);
+            closeModal();
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        // 2° AJUSTE: Funcionalidades do Modal de Detalhes da Área
+        function openDetailsModal(areaId) {
+            const area = areas.find(a => a.id === areaId);
+            if (!area) return;
+
+            document.getElementById('detailsModalTitle').textContent = `Histórico de Lançamentos: ${area.name}`;
+            const tbody = document.getElementById('detailsTableBody');
+            
+            if (!area.history || area.history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center">Nenhum lançamento detalhado encontrado.</td></tr>`;
+            } else {
+                // Renderiza as linhas da tabela ordenadas pelas mais recentes primeiro
+                const sortedHistory = [...area.history].sort((a,b) => b.timestamp - a.timestamp);
+                tbody.innerHTML = sortedHistory.map(h => {
+                    const date = new Date(h.timestamp);
+                    const formattedDate = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                    const obsText = h.observation || "Sem observações";
+                    
+                    return `
+                        <tr>
+                            <td>${formattedDate}</td>
+                            <td class="text-center"><strong>+${h.score}</strong></td>
+                            <td class="text-center">${h.participants}</td>
+                            <td>${obsText}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('detailsModal').classList.add('active');
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.remove('active');
+        }
+
+        // Fechar modals ao clicar fora deles
+        window.addEventListener('click', function(e) {
+            const modalCadastro = document.getElementById('modal');
+            const modalDetalhes = document.getElementById('detailsModal');
+            if (e.target === modalCadastro) closeModal();
+            if (e.target === modalDetalhes) closeDetailsModal();
+        });
+
+        // Enter para submeter no modal de cadastro
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && document.getElementById('modal').classList.contains('active')) {
+                // Evita submeter se o foco estiver na área de texto multilinhas
+                if(document.activeElement.id !== 'observationInput') {
+                    submitScore();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
